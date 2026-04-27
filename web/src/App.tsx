@@ -48,7 +48,7 @@ function App() {
   const [selectedAnswerIndex, setSelectedAnswerIndex] = useState<number | null>(null)
   const [answerAccepted, setAnswerAccepted] = useState<AnswerAcceptedPayload | null>(null)
   const [nowMs, setNowMs] = useState(() => Date.now())
-
+  
   useEffect(() => {
     let cancelled = false
 
@@ -77,10 +77,17 @@ function App() {
     }
   }, [])
 
-  useEffect(() => {
-    const timer = window.setInterval(() => setNowMs(Date.now()), 250)
-    return () => window.clearInterval(timer)
-  }, [])
+    useEffect(() => {
+    if (!question || sessionState !== "question_active") return;
+
+    const tick = () => setNowMs(Date.now());
+
+    tick(); 
+
+    const timer = window.setInterval(tick, 1000);
+
+    return () => window.clearInterval(timer);
+  }, [question?.ends_at, sessionState]);
 
   useEffect(() => {
     return () => {
@@ -93,13 +100,13 @@ function App() {
     [sessionState, selectedAnswerIndex, answerAccepted],
   )
 
-  const secondsLeft = useMemo(() => {
-    if (!question || sessionState !== 'question_active') {
-      return 0
-    }
-    const msRemaining = question.ends_at * 1000 - nowMs
-    return Math.max(0, Math.ceil(msRemaining / 1000))
-  }, [question, sessionState, nowMs])
+   const secondsLeft =
+    !question || sessionState !== "question_active"
+      ? 0
+      : Math.max(
+          0,
+          Math.ceil((question.ends_at * 1000 - nowMs) / 1000)
+        );
 
   const connectToRoom = (targetRoomID: string, quizID: string, playerName: string) => {
     const sanitizedRoomID = targetRoomID.trim()
